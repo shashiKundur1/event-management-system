@@ -1,0 +1,157 @@
+<%- include('../partials/message') %>
+
+<div class="container">
+  <div class="profile-page">
+    <h1>My Profile</h1>
+    
+    <div class="profile-card">
+      <form id="profile-form">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" name="name" value="<%= user.name %>" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" value="<%= user.email %>" required>
+        </div>
+        
+        <h3>Change Password</h3>
+        <p class="form-hint">Leave blank if you don't want to change your password</p>
+        
+        <div class="form-group">
+          <label for="currentPassword">Current Password</label>
+          <input type="password" id="currentPassword" name="currentPassword">
+        </div>
+        
+        <div class="form-group">
+          <label for="newPassword">New Password</label>
+          <input type="password" id="newPassword" name="newPassword">
+        </div>
+        
+        <div class="form-group">
+          <label for="confirmPassword">Confirm New Password</label>
+          <input type="password" id="confirmPassword" name="confirmPassword">
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Update Profile</button>
+        </div>
+      </form>
+    </div>
+    
+    <% if (user.role !== 'organizer') { %>
+      <div class="profile-card">
+        <h2>Become an Organizer</h2>
+        <p>Want to create and manage your own events? Become an organizer today!</p>
+        <button id="become-organizer-btn" class="btn btn-primary">Become an Organizer</button>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Update profile
+    const profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+      profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(profileForm);
+        const profileData = {};
+        
+        formData.forEach((value, key) => {
+          profileData[key] = value;
+        });
+        
+        try {
+          const response = await fetch('/user/profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(profileData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showMessage('success', data.message);
+            // Clear password fields
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    }
+    
+    // Become organizer
+    const becomeOrganizerBtn = document.getElementById('become-organizer-btn');
+    if (becomeOrganizerBtn) {
+      becomeOrganizerBtn.addEventListener('click', async function() {
+        if (confirm('Are you sure you want to become an organizer?')) {
+          try {
+            const response = await fetch('/user/become-organizer', {
+              method: 'POST'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              showMessage('success', data.message);
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              showMessage('error', data.message);
+            }
+          } catch (error) {
+            showMessage('error', 'An error occurred. Please try again.');
+          }
+        }
+      });
+    }
+  });
+  
+  // Show message function
+  function showMessage(type, message) {
+    const messageContainer = document.getElementById('message-container');
+    if (!messageContainer) {
+      const container = document.createElement('div');
+      container.id = 'message-container';
+      document.body.prepend(container);
+    }
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${type}`;
+    messageElement.innerHTML = `
+      <div class="message-content">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <p>${message}</p>
+      </div>
+      <button class="close-message" aria-label="Close message">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    document.getElementById('message-container').appendChild(messageElement);
+    
+    // Add event listener to close button
+    messageElement.querySelector('.close-message').addEventListener('click', function() {
+      messageElement.remove();
+    });
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (messageElement.parentNode) {
+        messageElement.remove();
+      }
+    }, 5000);
+  }
+</script>

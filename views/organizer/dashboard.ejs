@@ -1,0 +1,521 @@
+<%- include('../partials/message') %>
+
+<div class="container">
+  <div class="organizer-dashboard">
+    <div class="dashboard-header">
+      <h1>Organizer Dashboard</h1>
+      <button id="create-event-btn" class="btn btn-primary">Create New Event</button>
+    </div>
+    
+    <% if (events.length === 0) { %>
+      <div class="no-events">
+        <p>You haven't created any events yet.</p>
+        <button id="empty-create-event-btn" class="btn btn-primary">Create Your First Event</button>
+      </div>
+    <% } else { %>
+      <div class="events-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Date & Time</th>
+              <th>Bookings</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% events.forEach(event => { %>
+              <tr>
+                <td class="event-cell">
+                  <img src="<%= event.image_url %>" alt="<%= event.title %>">
+                  <div>
+                    <h3><%= event.title %></h3>
+                    <p><%= event.category %></p>
+                  </div>
+                </td>
+                <td>
+                  <p><i class="far fa-calendar"></i> <%= moment(event.start_date).format('MMM D, YYYY') %></p>
+                  <p><i class="far fa-clock"></i> <%= event.start_time %> - <%= event.end_time %></p>
+                </td>
+                <td>
+                  <p><%= event.booked_seats || 0 %>/<%= event.max_attendees %> booked</p>
+                  <div class="progress-bar">
+                    <div class="progress" style="width: <%= ((event.booked_seats || 0) / event.max_attendees) * 100 %>%"></div>
+                  </div>
+                </td>
+                <td>
+                  <span class="status-badge <%= event.status %>">
+                    <%= event.status === 'upcoming' ? 'Upcoming' : 
+                       event.status === 'in-progress' ? 'In Progress' : 'Ended' %>
+                  </span>
+                </td>
+                <td>
+                  <div class="event-actions">
+                    <button class="action-btn view-details-btn" data-event-id="<%= event.id %>">
+                      <i class="fas fa-eye"></i> Details
+                    </button>
+                    
+                    <% if (event.status !== 'upcoming') { %>
+                      <button class="action-btn view-attendees-btn" data-event-id="<%= event.id %>">
+                        <i class="fas fa-users"></i> Attendees
+                      </button>
+                      
+                      <button class="action-btn view-reviews-btn" data-event-id="<%= event.id %>">
+                        <i class="fas fa-star"></i> Reviews
+                        <% if (event.review_count > 0) { %>
+                          <span class="badge"><%= event.review_count %></span>
+                        <% } %>
+                      </button>
+                      
+                      <a href="/organizer/events/<%= event.id %>/export-attendees" class="action-btn">
+                        <i class="fas fa-download"></i> Export
+                      </a>
+                    <% } %>
+                    
+                    <% if (event.status === 'upcoming') { %>
+                      <button class="action-btn delete-event-btn" data-event-id="<%= event.id %>">
+                        <i class="fas fa-trash"></i> Delete
+                      </button>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Create Event Modal -->
+<div id="create-event-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Create New Event</h2>
+      <button class="close-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="create-event-form">
+        <div class="form-group">
+          <label for="title">Event Title*</label>
+          <input type="text" id="title" name="title" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Description*</label>
+          <textarea id="description" name="description" rows="4" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="image_url">Image URL*</label>
+          <input type="url" id="image_url" name="image_url" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start_date">Date*</label>
+            <input type="date" id="start_date" name="start_date" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="start_time">Start Time*</label>
+            <input type="time" id="start_time" name="start_time" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="end_time">End Time*</label>
+            <input type="time" id="end_time" name="end_time" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="location">Location*</label>
+          <input type="text" id="location" name="location" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="max_attendees">Maximum Attendees* (min: 5)</label>
+            <input type="number" id="max_attendees" name="max_attendees" min="5" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="category">Category*</label>
+            <select id="category" name="category" required>
+              <option value="">Select Category</option>
+              <option value="Music">Music</option>
+              <option value="Tech">Tech</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Conference">Conference</option>
+              <option value="Networking">Networking</option>
+              <option value="Art">Art</option>
+              <option value="Sports">Sports</option>
+              <option value="Food">Food</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline close-modal-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Attendees Modal -->
+<div id="attendees-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Event Attendees</h2>
+      <button class="close-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="attendees-list" class="attendees-list">
+        <p class="loading">Loading attendees...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reviews Modal -->
+<div id="reviews-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Event Reviews</h2>
+      <button class="close-modal">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="reviews-list" class="reviews-list">
+        <p class="loading">Loading reviews...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Open Create Event Modal
+    const createEventBtn = document.getElementById('create-event-btn');
+    const emptyCreateEventBtn = document.getElementById('empty-create-event-btn');
+    const createEventModal = document.getElementById('create-event-modal');
+    
+    if (createEventBtn) {
+      createEventBtn.addEventListener('click', function() {
+        createEventModal.style.display = 'block';
+      });
+    }
+    
+    if (emptyCreateEventBtn) {
+      emptyCreateEventBtn.addEventListener('click', function() {
+        createEventModal.style.display = 'block';
+      });
+    }
+    
+    // Close Modals
+    document.querySelectorAll('.close-modal, .close-modal-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        document.querySelectorAll('.modal').forEach(modal => {
+          modal.style.display = 'none';
+        });
+      });
+    });
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+      document.querySelectorAll('.modal').forEach(modal => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    });
+    
+    // Create Event Form
+    const createEventForm = document.getElementById('create-event-form');
+    if (createEventForm) {
+      createEventForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(createEventForm);
+        const eventData = {};
+        
+        formData.forEach((value, key) => {
+          eventData[key] = value;
+        });
+        
+        try {
+          const response = await fetch('/organizer/events', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(eventData)
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showMessage('success', data.message);
+            createEventModal.style.display = 'none';
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    }
+    
+    // View Event Details
+    document.querySelectorAll('.view-details-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const eventId = this.getAttribute('data-event-id');
+        window.location.href = `/events/${eventId}`;
+      });
+    });
+    
+    // View Attendees
+    const attendeesModal = document.getElementById('attendees-modal');
+    const attendeesList = document.getElementById('attendees-list');
+    
+    document.querySelectorAll('.view-attendees-btn').forEach(button => {
+      button.addEventListener('click', async function() {
+        const eventId = this.getAttribute('data-event-id');
+        
+        attendeesModal.style.display = 'block';
+        attendeesList.innerHTML = '<p class="loading">Loading attendees...</p>';
+        
+        try {
+          const response = await fetch(`/organizer/events/${eventId}/attendees`);
+          const data = await response.json();
+          
+          if (response.ok) {
+            if (data.attendees.length === 0) {
+              attendeesList.innerHTML = '<p class="no-items">No attendees for this event.</p>';
+            } else {
+              let html = '<table class="attendees-table">';
+              html += `
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Booking Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+              `;
+              
+              data.attendees.forEach(attendee => {
+                html += `
+                  <tr>
+                    <td>${attendee.name}</td>
+                    <td>${attendee.email}</td>
+                    <td>${new Date(attendee.booking_date).toLocaleString()}</td>
+                    <td>
+                      ${attendee.attended ? 
+                        '<span class="status-badge attended">Attended</span>' : 
+                        `<button class="btn btn-sm btn-primary mark-attendance-btn" data-booking-id="${attendee.booking_id}" data-event-id="${eventId}">Mark Attended</button>`
+                      }
+                    </td>
+                  </tr>
+                `;
+              });
+              
+              html += '</tbody></table>';
+              attendeesList.innerHTML = html;
+              
+              // Add event listeners to mark attendance buttons
+              document.querySelectorAll('.mark-attendance-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                  const bookingId = this.getAttribute('data-booking-id');
+                  const eventId = this.getAttribute('data-event-id');
+                  
+                  try {
+                    const response = await fetch(`/organizer/events/${eventId}/attendees/${bookingId}/mark`, {
+                      method: 'POST'
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                      showMessage('success', data.message);
+                      this.parentNode.innerHTML = '<span class="status-badge attended">Attended</span>';
+                    } else {
+                      showMessage('error', data.message);
+                    }
+                  } catch (error) {
+                    showMessage('error', 'An error occurred. Please try again.');
+                  }
+                });
+              });
+            }
+          } else {
+            attendeesList.innerHTML = `<p class="error">${data.message}</p>`;
+          }
+        } catch (error) {
+          attendeesList.innerHTML = '<p class="error">Failed to load attendees.</p>';
+        }
+      });
+    });
+    
+    // View Reviews
+    const reviewsModal = document.getElementById('reviews-modal');
+    const reviewsList = document.getElementById('reviews-list');
+    
+    document.querySelectorAll('.view-reviews-btn').forEach(button => {
+      button.addEventListener('click', async function() {
+        const eventId = this.getAttribute('data-event-id');
+        
+        reviewsModal.style.display = 'block';
+        reviewsList.innerHTML = '<p class="loading">Loading reviews...</p>';
+        
+        try {
+          const response = await fetch(`/organizer/events/${eventId}/reviews`);
+          const data = await response.json();
+          
+          if (response.ok) {
+            if (data.reviews.length === 0) {
+              reviewsList.innerHTML = '<p class="no-items">No reviews for this event.</p>';
+            } else {
+              let html = '';
+              let avgRating = data.reviews.reduce((sum, review) => sum + review.rating, 0) / data.reviews.length;
+              
+              html += `
+                <div class="reviews-summary">
+                  <div class="avg-rating">
+                    <span class="rating-value">${avgRating.toFixed(1)}</span>
+                    <div class="stars">
+              `;
+              
+              for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(avgRating)) {
+                  html += '<i class="fas fa-star"></i>';
+                } else if (i === Math.ceil(avgRating) && avgRating % 1 !== 0) {
+                  html += '<i class="fas fa-star-half-alt"></i>';
+                } else {
+                  html += '<i class="far fa-star"></i>';
+                }
+              }
+              
+              html += `
+                    </div>
+                  </div>
+                  <p>${data.reviews.length} review${data.reviews.length !== 1 ? 's' : ''}</p>
+                </div>
+              `;
+              
+              data.reviews.forEach(review => {
+                html += `
+                  <div class="review-card">
+                    <div class="review-header">
+                      <div class="reviewer-info">
+                        <h4>${review.user_name} ${review.user_role === 'organizer' ? '<span class="organizer-badge">Organizer</span>' : ''}</h4>
+                        <div class="review-date">${new Date(review.created_at).toLocaleDateString()}</div>
+                      </div>
+                      <div class="review-rating">
+                `;
+                
+                for (let i = 1; i <= 5; i++) {
+                  html += `<i class="${i <= review.rating ? 'fas' : 'far'} fa-star"></i>`;
+                }
+                
+                html += `
+                      </div>
+                    </div>
+                    <div class="review-content">
+                      <p>${review.comment}</p>
+                    </div>
+                    <div class="review-footer">
+                      <span class="review-likes">
+                        <i class="far fa-thumbs-up"></i>
+                        <span class="like-count">${review.like_count}</span>
+                      </span>
+                    </div>
+                  </div>
+                `;
+              });
+              
+              reviewsList.innerHTML = html;
+            }
+          } else {
+            reviewsList.innerHTML = `<p class="error">${data.message}</p>`;
+          }
+        } catch (error) {
+          reviewsList.innerHTML = '<p class="error">Failed to load reviews.</p>';
+        }
+      });
+    });
+    
+    // Delete Event
+    document.querySelectorAll('.delete-event-btn').forEach(button => {
+      button.addEventListener('click', async function() {
+        const eventId = this.getAttribute('data-event-id');
+        
+        if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+          try {
+            const response = await fetch(`/organizer/events/${eventId}`, {
+              method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              showMessage('success', data.message);
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              showMessage('error', data.message);
+            }
+          } catch (error) {
+            showMessage('error', 'An error occurred. Please try again.');
+          }
+        }
+      });
+    });
+  });
+  
+  // Show message function
+  function showMessage(type, message) {
+    const messageContainer = document.getElementById('message-container');
+    if (!messageContainer) {
+      const container = document.createElement('div');
+      container.id = 'message-container';
+      document.body.prepend(container);
+    }
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${type}`;
+    messageElement.innerHTML = `
+      <div class="message-content">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <p>${message}</p>
+      </div>
+      <button class="close-message" aria-label="Close message">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    document.getElementById('message-container').appendChild(messageElement);
+    
+    // Add event listener to close button
+    messageElement.querySelector('.close-message').addEventListener('click', function() {
+      messageElement.remove();
+    });
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (messageElement.parentNode) {
+        messageElement.remove();
+      }
+    }, 5000);
+  }
+</script>

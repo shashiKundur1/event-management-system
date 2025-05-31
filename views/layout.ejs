@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> | EventHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="/" class="logo">
+          <h1>EventHub</h1>
+        </a>
+        <nav class="main-nav">
+          <ul>
+            <li><a href="/events">Events</a></li>
+            <% if (locals.user) { %>
+              <li><a href="/bookings">My Bookings</a></li>
+              <% if (locals.user.role === 'organizer') { %>
+                <li><a href="/organizer/dashboard">Organizer Dashboard</a></li>
+              <% } %>
+            <% } %>
+          </ul>
+        </nav>
+        <div class="user-actions">
+          <% if (locals.user) { %>
+            <div class="user-menu">
+              <button class="user-menu-btn">
+                Hello, <%= locals.user.name %> <i class="fas fa-chevron-down"></i>
+              </button>
+              <div class="user-dropdown">
+                <a href="/user/profile">Profile</a>
+                <% if (locals.user.role !== 'organizer') { %>
+                  <a href="#" id="become-organizer">Become an Organizer</a>
+                <% } %>
+                <a href="/logout">Logout</a>
+              </div>
+            </div>
+          <% } else { %>
+            <a href="/login" class="btn btn-primary">Login</a>
+            <a href="/register" class="btn btn-outline">Register</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <%- body %>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <h2>EventHub</h2>
+          <p>Discover, book, and manage events with ease.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-section">
+            <h3>Quick Links</h3>
+            <ul>
+              <li><a href="/events">Browse Events</a></li>
+              <% if (locals.user) { %>
+                <li><a href="/bookings">My Bookings</a></li>
+                <% if (locals.user.role === 'organizer') { %>
+                  <li><a href="/organizer/dashboard">Organizer Dashboard</a></li>
+                <% } %>
+              <% } else { %>
+                <li><a href="/login">Login</a></li>
+                <li><a href="/register">Register</a></li>
+              <% } %>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h3>Categories</h3>
+            <ul>
+              <li><a href="/events?category=Music">Music</a></li>
+              <li><a href="/events?category=Tech">Tech</a></li>
+              <li><a href="/events?category=Workshop">Workshop</a></li>
+              <li><a href="/events?category=Conference">Conference</a></li>
+            </ul>
+          </div>
+          <div class="footer-section">
+            <h3>About Us</h3>
+            <ul>
+              <li><a href="#">Our Story</a></li>
+              <li><a href="#">Contact</a></li>
+              <li><a href="#">Privacy Policy</a></li>
+              <li><a href="#">Terms of Service</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 EventHub. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal container for dynamically created modals -->
+  <div id="modal-container"></div>
+
+  <script src="/js/main.js"></script>
+  <% if (locals.user && locals.user.role !== 'organizer') { %>
+    <script src="/js/become-organizer.js"></script>
+  <% } %>
+  <% if (typeof additionalScripts !== 'undefined') { %>
+    <% additionalScripts.forEach(script => { %>
+      <script src="<%= script %>"></script>
+    <% }) %>
+  <% } %>
+</body>
+</html>

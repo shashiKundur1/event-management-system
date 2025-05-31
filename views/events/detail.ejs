@@ -1,0 +1,497 @@
+<%- include('../partials/message') %>
+
+<div class="container">
+  <div class="event-detail">
+    <div class="event-header">
+      <h1><%= event.title %></h1>
+      <div class="event-meta">
+        <p><i class="far fa-calendar"></i> <%= moment(event.start_date).format('MMMM D, YYYY') %></p>
+        <p><i class="far fa-clock"></i> <%= event.start_time %> - <%= event.end_time %></p>
+        <p><i class="fas fa-map-marker-alt"></i> <%= event.location %></p>
+        <p><i class="fas fa-user"></i> Organized by <%= event.organizer_name %></p>
+        <% if (event.avg_rating) { %>
+          <p>
+            <i class="fas fa-star"></i> 
+            <%= parseFloat(event.avg_rating).toFixed(1) %> 
+            (<%= event.review_count %> reviews)
+          </p>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="event-content">
+      <div class="event-image">
+        <img src="<%= event.image_url %>" alt="<%= event.title %>">
+        <% if (event.status === 'starting-soon') { %>
+          <div class="event-tag starting-soon">Starting Soon</div>
+        <% } else if (event.status === 'filling-fast') { %>
+          <div class="event-tag filling-fast">Filling Fast</div>
+        <% } else if (event.status === 'filled') { %>
+          <div class="event-tag filled">Filled</div>
+        <% } else if (event.status === 'ended') { %>
+          <div class="event-tag ended">Event Ended</div>
+        <% } %>
+      </div>
+
+      <div class="event-info">
+        <div class="event-description">
+          <h2>About this event</h2>
+          <p><%= event.description %></p>
+        </div>
+
+        <div class="event-booking">
+          <div class="booking-card">
+            <h3>Event Details</h3>
+            <p><i class="fas fa-users"></i> <%= event.max_attendees - event.booked_seats %> seats available out of <%= event.max_attendees %></p>
+            <p><i class="fas fa-tag"></i> <%= event.category %></p>
+            
+            <% if (locals.user) { %>
+              <% if (!userBooking && event.status !== 'ended' && event.status !== 'filled') { %>
+                <button id="book-event" class="btn btn-primary btn-block">Book Now</button>
+              <% } else if (userBooking && event.status !== 'ended') { %>
+                <p class="success-message">You've booked this event!</p>
+                <button id="cancel-booking" class="btn btn-danger btn-block">Cancel Booking</button>
+              <% } else if (event.status === 'ended') { %>
+                <p class="info-message">This event has ended</p>
+              <% } else if (event.status === 'filled') { %>
+                <p class="info-message">This event is fully booked</p>
+              <% } %>
+            <% } else { %>
+              <a href="/login" class="btn btn-primary btn-block">Login to Book</a>
+            <% } %>
+          </div>
+          
+          <% if (userBooking && event.status === 'starting-soon') { %>
+            <div class="countdown-container">
+              <h3>Event Starting In</h3>
+              <div id="countdown" data-date="<%= event.start_date %>" data-time="<%= event.start_time %>">
+                <div class="countdown-item">
+                  <span id="days">0</span>
+                  <span>Days</span>
+                </div>
+                <div class="countdown-item">
+                  <span id="hours">0</span>
+                  <span>Hours</span>
+                </div>
+                <div class="countdown-item">
+                  <span id="minutes">0</span>
+                  <span>Minutes</span>
+                </div>
+                <div class="countdown-item">
+                  <span id="seconds">0</span>
+                  <span>Seconds</span>
+                </div>
+              </div>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="event-reviews">
+      <h2>Reviews</h2>
+      
+      <% if (event.status === 'ended' && locals.user) { %>
+        <% if (!userReview) { %>
+          <div class="review-form">
+            <h3>Add Your Review</h3>
+            <form id="review-form">
+              <div class="rating-container">
+                <div class="star-rating">
+                  <input type="radio" id="star5" name="rating" value="5" />
+                  <label for="star5"><i class="fas fa-star"></i></label>
+                  <input type="radio" id="star4" name="rating" value="4" />
+                  <label for="star4"><i class="fas fa-star"></i></label>
+                  <input type="radio" id="star3" name="rating" value="3" />
+                  <label for="star3"><i class="fas fa-star"></i></label>
+                  <input type="radio" id="star2" name="rating" value="2" />
+                  <label for="star2"><i class="fas fa-star"></i></label>
+                  <input type="radio" id="star1" name="rating" value="1" />
+                  <label for="star1"><i class="fas fa-star"></i></label>
+                </div>
+              </div>
+              <div class="form-group">
+                <textarea name="comment" id="review-comment" rows="3" placeholder="Write your review..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+          </div>
+        <% } %>
+      <% } %>
+      
+      <div class="reviews-list">
+        <% if (reviews.length === 0) { %>
+          <p class="no-reviews">No reviews yet.</p>
+        <% } else { %>
+          <% let displayedReviews = reviews.slice(0, 5); %>
+          <% let hiddenReviews = reviews.slice(5); %>
+          
+          <% displayedReviews.forEach(review => { %>
+            <div class="review-card" data-review-id="<%= review.id %>">
+              <div class="review-header">
+                <div class="reviewer-info">
+                  <h4><%= review.user_name %> <% if (review.user_role === 'organizer') { %><span class="organizer-badge">Organizer</span><% } %></h4>
+                  <div class="review-date"><%= moment(review.created_at).format('MMMM D, YYYY') %></div>
+                </div>
+                <div class="review-rating">
+                  <% for (let i = 1; i <= 5; i++) { %>
+                    <i class="<%= i <= review.rating ? 'fas' : 'far' %> fa-star"></i>
+                  <% } %>
+                </div>
+                <% if (locals.user && review.user_id === locals.user.id) { %>
+                  <div class="review-actions">
+                    <button class="review-action-btn" aria-label="Review actions">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="review-action-dropdown">
+                      <button class="delete-review" data-review-id="<%= review.id %>">Delete Review</button>
+                    </div>
+                  </div>
+                <% } %>
+              </div>
+              <div class="review-content">
+                <p><%= review.comment %></p>
+              </div>
+              <div class="review-footer">
+                <% if (locals.user) { %>
+                  <button class="review-like-btn <%= review.user_liked ? 'liked' : '' %>" data-review-id="<%= review.id %>">
+                    <i class="<%= review.user_liked ? 'fas' : 'far' %> fa-thumbs-up"></i>
+                    <span class="like-count"><%= review.like_count %></span>
+                  </button>
+                <% } else { %>
+                  <span class="review-likes">
+                    <i class="far fa-thumbs-up"></i>
+                    <span class="like-count"><%= review.like_count %></span>
+                  </span>
+                <% } %>
+              </div>
+            </div>
+          <% }) %>
+          
+          <% if (hiddenReviews.length > 0) { %>
+            <div class="view-more-container">
+              <button id="view-more-reviews" class="btn btn-outline">View More Reviews (<%= hiddenReviews.length %>)</button>
+            </div>
+            
+            <div id="hidden-reviews" class="hidden">
+              <% hiddenReviews.forEach(review => { %>
+                <div class="review-card" data-review-id="<%= review.id %>">
+                  <div class="review-header">
+                    <div class="reviewer-info">
+                      <h4><%= review.user_name %> <% if (review.user_role === 'organizer') { %><span class="organizer-badge">Organizer</span><% } %></h4>
+                      <div class="review-date"><%= moment(review.created_at).format('MMMM D, YYYY') %></div>
+                    </div>
+                    <div class="review-rating">
+                      <% for (let i = 1; i <= 5; i++) { %>
+                        <i class="<%= i <= review.rating ? 'fas' : 'far' %> fa-star"></i>
+                      <% } %>
+                    </div>
+                    <% if (locals.user && review.user_id === locals.user.id) { %>
+                      <div class="review-actions">
+                        <button class="review-action-btn" aria-label="Review actions">
+                          <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="review-action-dropdown">
+                          <button class="delete-review" data-review-id="<%= review.id %>">Delete Review</button>
+                        </div>
+                      </div>
+                    <% } %>
+                  </div>
+                  <div class="review-content">
+                    <p><%= review.comment %></p>
+                  </div>
+                  <div class="review-footer">
+                    <% if (locals.user) { %>
+                      <button class="review-like-btn <%= review.user_liked ? 'liked' : '' %>" data-review-id="<%= review.id %>">
+                        <i class="<%= review.user_liked ? 'fas' : 'far' %> fa-thumbs-up"></i>
+                        <span class="like-count"><%= review.like_count %></span>
+                      </button>
+                    <% } else { %>
+                      <span class="review-likes">
+                        <i class="far fa-thumbs-up"></i>
+                        <span class="like-count"><%= review.like_count %></span>
+                      </span>
+                    <% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } %>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Countdown timer
+    const countdownElement = document.getElementById('countdown');
+    if (countdownElement) {
+      const eventDate = countdownElement.getAttribute('data-date');
+      const eventTime = countdownElement.getAttribute('data-time');
+      const eventDateTime = new Date(`${eventDate}T${eventTime}`);
+      
+      function updateCountdown() {
+        const now = new Date();
+        const diff = eventDateTime - now;
+        
+        if (diff <= 0) {
+          document.getElementById('days').textContent = '0';
+          document.getElementById('hours').textContent = '0';
+          document.getElementById('minutes').textContent = '0';
+          document.getElementById('seconds').textContent = '0';
+          return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('days').textContent = days;
+        document.getElementById('hours').textContent = hours;
+        document.getElementById('minutes').textContent = minutes;
+        document.getElementById('seconds').textContent = seconds;
+      }
+      
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+    
+    // View more reviews
+    const viewMoreBtn = document.getElementById('view-more-reviews');
+    if (viewMoreBtn) {
+      viewMoreBtn.addEventListener('click', function() {
+        const hiddenReviews = document.getElementById('hidden-reviews');
+        hiddenReviews.classList.toggle('hidden');
+        viewMoreBtn.textContent = hiddenReviews.classList.contains('hidden') ? 
+          `View More Reviews (${hiddenReviews.querySelectorAll('.review-card').length})` : 
+          'Hide Reviews';
+      });
+    }
+    
+    // Book event
+    const bookEventBtn = document.getElementById('book-event');
+    if (bookEventBtn) {
+      bookEventBtn.addEventListener('click', async function() {
+        try {
+          const eventId = '<%= event.id %>';
+          const response = await fetch(`/events/${eventId}/book`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showMessage('success', data.message);
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    }
+    
+    // Cancel booking
+    const cancelBookingBtn = document.getElementById('cancel-booking');
+    if (cancelBookingBtn) {
+      cancelBookingBtn.addEventListener('click', async function() {
+        try {
+          const eventId = '<%= event.id %>';
+          const response = await fetch(`/events/${eventId}/cancel`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showMessage('success', data.message);
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    }
+    
+    // Review form
+    const reviewForm = document.getElementById('review-form');
+    if (reviewForm) {
+      reviewForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const rating = document.querySelector('input[name="rating"]:checked');
+        const comment = document.getElementById('review-comment').value;
+        
+        if (!rating) {
+          return showMessage('error', 'Please select a rating');
+        }
+        
+        if (!comment.trim()) {
+          return showMessage('error', 'Please write a review');
+        }
+        
+        try {
+          const eventId = '<%= event.id %>';
+          const response = await fetch(`/events/${eventId}/review`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              rating: rating.value,
+              comment: comment
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            showMessage('success', data.message);
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    }
+    
+    // Delete review
+    document.querySelectorAll('.delete-review').forEach(button => {
+      button.addEventListener('click', async function() {
+        const reviewId = this.getAttribute('data-review-id');
+        const eventId = '<%= event.id %>';
+        
+        if (confirm('Are you sure you want to delete this review?')) {
+          try {
+            const response = await fetch(`/events/${eventId}/review/${reviewId}`, {
+              method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+              showMessage('success', data.message);
+              setTimeout(() => {
+                window.location.reload();
+              }, 1500);
+            } else {
+              showMessage('error', data.message);
+            }
+          } catch (error) {
+            showMessage('error', 'An error occurred. Please try again.');
+          }
+        }
+      });
+    });
+    
+    // Like review
+    document.querySelectorAll('.review-like-btn').forEach(button => {
+      button.addEventListener('click', async function() {
+        const reviewId = this.getAttribute('data-review-id');
+        const eventId = '<%= event.id %>';
+        
+        try {
+          const response = await fetch(`/events/${eventId}/review/${reviewId}/like`, {
+            method: 'POST'
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok) {
+            const likeCount = this.querySelector('.like-count');
+            const likeIcon = this.querySelector('i');
+            
+            if (data.action === 'liked') {
+              this.classList.add('liked');
+              likeIcon.classList.remove('far');
+              likeIcon.classList.add('fas');
+              likeCount.textContent = parseInt(likeCount.textContent) + 1;
+            } else {
+              this.classList.remove('liked');
+              likeIcon.classList.remove('fas');
+              likeIcon.classList.add('far');
+              likeCount.textContent = parseInt(likeCount.textContent) - 1;
+            }
+          } else {
+            showMessage('error', data.message);
+          }
+        } catch (error) {
+          showMessage('error', 'An error occurred. Please try again.');
+        }
+      });
+    });
+    
+    // Review action dropdowns
+    document.querySelectorAll('.review-action-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const dropdown = this.nextElementSibling;
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      if (!event.target.matches('.review-action-btn') && !event.target.matches('.fa-ellipsis-v')) {
+        document.querySelectorAll('.review-action-dropdown').forEach(dropdown => {
+          dropdown.style.display = 'none';
+        });
+      }
+    });
+  });
+  
+  // Show message function
+  function showMessage(type, message) {
+    const messageContainer = document.getElementById('message-container');
+    if (!messageContainer) {
+      const container = document.createElement('div');
+      container.id = 'message-container';
+      document.body.prepend(container);
+    }
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `message ${type}`;
+    messageElement.innerHTML = `
+      <div class="message-content">
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <p>${message}</p>
+      </div>
+      <button class="close-message" aria-label="Close message">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    
+    document.getElementById('message-container').appendChild(messageElement);
+    
+    // Add event listener to close button
+    messageElement.querySelector('.close-message').addEventListener('click', function() {
+      messageElement.remove();
+    });
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (messageElement.parentNode) {
+        messageElement.remove();
+      }
+    }, 5000);
+  }
+</script>

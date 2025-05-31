@@ -1,0 +1,137 @@
+<%- include('../partials/message') %>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <h1>Discover Amazing Events</h1>
+      <p>Find and book events that match your interests</p>
+      <a href="#featured-events" class="btn btn-primary">Explore Events</a>
+    </div>
+  </div>
+</section>
+
+<section class="about-section">
+  <div class="container">
+    <div class="about-content">
+      <div class="about-text">
+        <h2>About EventHub</h2>
+        <p>EventHub is your go-to platform for discovering, booking, and managing events. Whether you're looking for concerts, workshops, conferences, or community gatherings, we've got you covered.</p>
+        <p>Join thousands of event-goers and organizers who trust EventHub for their event needs.</p>
+        <a href="#footer" class="btn btn-outline">Learn More</a>
+      </div>
+      <div class="about-image">
+        <img src="https://images.pexels.com/photos/2774556/pexels-photo-2774556.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" alt="Event crowd">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="featured-events" class="events-section">
+  <div class="container">
+    <div class="section-header">
+      <h2>Featured Events</h2>
+      <div class="filters">
+        <form id="search-form" action="/events" method="GET">
+          <div class="search-input">
+            <input type="text" name="search" value="<%= search %>" placeholder="Search events...">
+            <button type="submit" class="search-btn"><i class="fas fa-search"></i></button>
+          </div>
+          
+          <div class="filter-group">
+            <select name="category" id="category-filter">
+              <option value="">All Categories</option>
+              <% categories.forEach(cat => { %>
+                <option value="<%= cat %>" <%= category === cat ? 'selected' : '' %>><%= cat %></option>
+              <% }) %>
+            </select>
+            
+            <input type="date" name="date" id="date-filter" value="<%= dateFilter %>">
+            
+            <input type="text" name="organizer" placeholder="Organizer" value="<%= organizerFilter %>">
+            
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <button type="button" id="clear-filters" class="btn btn-outline">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="events-grid">
+      <% if (events.length === 0) { %>
+        <div class="no-events">
+          <p>No events found. Try adjusting your filters.</p>
+        </div>
+      <% } else { %>
+        <% events.forEach(event => { %>
+          <div class="event-card <%= event.status === 'ended' ? 'event-ended' : '' %>">
+            <div class="event-image">
+              <img src="<%= event.image_url %>" alt="<%= event.title %>">
+              <% if (event.status === 'starting-soon') { %>
+                <div class="event-tag starting-soon">Starting Soon</div>
+              <% } else if (event.status === 'filling-fast') { %>
+                <div class="event-tag filling-fast">Filling Fast</div>
+              <% } else if (event.status === 'filled') { %>
+                <div class="event-tag filled">Filled</div>
+              <% } %>
+            </div>
+            <div class="event-details">
+              <h3><%= event.title %></h3>
+              <p class="event-description"><%= event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description %></p>
+              <div class="event-meta">
+                <p><i class="far fa-calendar"></i> <%= moment(event.start_date).format('MMM D, YYYY') %></p>
+                <p><i class="far fa-clock"></i> <%= event.start_time %></p>
+                <p><i class="fas fa-map-marker-alt"></i> <%= event.location %></p>
+                <p><i class="fas fa-user-friends"></i> <%= event.max_attendees - (event.booked_seats || 0) %> seats left</p>
+                <p><i class="fas fa-user"></i> <%= event.organizer_name %></p>
+                <% if (event.avg_rating) { %>
+                  <p>
+                    <i class="fas fa-star"></i> 
+                    <%= parseFloat(event.avg_rating).toFixed(1) %> 
+                    (<%= event.review_count %> reviews)
+                  </p>
+                <% } %>
+              </div>
+              <a href="/events/<%= event.id %>" class="btn btn-primary">View Details</a>
+            </div>
+          </div>
+        <% }) %>
+      <% } %>
+    </div>
+
+    <% if (totalPages > 1) { %>
+      <div class="pagination">
+        <% if (currentPage > 1) { %>
+          <a href="?page=<%= currentPage - 1 %><%= search ? '&search=' + search : '' %><%= category ? '&category=' + category : '' %><%= dateFilter ? '&date=' + dateFilter : '' %><%= organizerFilter ? '&organizer=' + organizerFilter : '' %>" class="btn btn-outline"><i class="fas fa-chevron-left"></i> Previous</a>
+        <% } %>
+        
+        <% for (let i = 1; i <= totalPages; i++) { %>
+          <a href="?page=<%= i %><%= search ? '&search=' + search : '' %><%= category ? '&category=' + category : '' %><%= dateFilter ? '&date=' + dateFilter : '' %><%= organizerFilter ? '&organizer=' + organizerFilter : '' %>" class="btn <%= currentPage === i ? 'btn-primary' : 'btn-outline' %>"><%= i %></a>
+        <% } %>
+        
+        <% if (currentPage < totalPages) { %>
+          <a href="?page=<%= currentPage + 1 %><%= search ? '&search=' + search : '' %><%= category ? '&category=' + category : '' %><%= dateFilter ? '&date=' + dateFilter : '' %><%= organizerFilter ? '&organizer=' + organizerFilter : '' %>" class="btn btn-outline">Next <i class="fas fa-chevron-right"></i></a>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const clearFiltersBtn = document.getElementById('clear-filters');
+    clearFiltersBtn.addEventListener('click', function() {
+      window.location.href = '/events';
+    });
+    
+    const categoryFilter = document.getElementById('category-filter');
+    const dateFilter = document.getElementById('date-filter');
+    
+    categoryFilter.addEventListener('change', function() {
+      document.getElementById('search-form').submit();
+    });
+    
+    dateFilter.addEventListener('change', function() {
+      document.getElementById('search-form').submit();
+    });
+  });
+</script>
